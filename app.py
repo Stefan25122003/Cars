@@ -26,6 +26,10 @@ try:
         'engineSize': 'Engine_Volume',
         'Manufacturer': 'Manufacturer'
     })
+    CONVERSION_RATE = 1.60934 
+
+    # Aplică conversia. Acum, 'Mileage_Num' va fi în Kilometri.
+    df['Mileage_Num'] = df['Mileage_Num'] * CONVERSION_RATE
     
     df['Mileage_Num'] = pd.to_numeric(df['Mileage_Num'], errors='coerce')
     df['Engine_Volume'] = pd.to_numeric(df['Engine_Volume'], errors='coerce')
@@ -67,7 +71,7 @@ try:
         Numar_Inregistrari = ('Year', 'count')
     ).reset_index()
     
-    ranking_df = ranking_df[ranking_df['Numar_Inregistrari'] >= 5]
+    ranking_df = ranking_df[ranking_df['Numar_Inregistrari'] >= 2]
     ranking_df = ranking_df.sort_values(by='Raport_Pret_Calitate_Mediu', ascending=False)
     
 except Exception as e:
@@ -162,7 +166,7 @@ with tab3:
         st.markdown(f"*(Scorul de Calitate este definit pe baza Anului, MPG și Volumului Motorului.)*")
         
         display_cols = ['Manufacturer', 'model', 'Raport_Pret_Calitate_Mediu', 'Scor_Calitate_Mediu', 'Pret_Mediu', 'Numar_Inregistrari']
-        st.dataframe(ranking_df[display_cols].head(10).style.format(
+        st.dataframe(ranking_df[display_cols].head(1000).style.format(
             {'Raport_Pret_Calitate_Mediu': '{:.2f}', 'Scor_Calitate_Mediu': '{:.1f}', 'Pret_Mediu': '${:,.0f}'}
         ), hide_index=True, use_container_width=True)
         st.markdown("> **Un raport mai mare** indică un model care oferă mai multă 'calitate' per unitate monetară.")
@@ -367,7 +371,7 @@ with tab4:
             'Engine_Volume': input_engine_26,
             'Gear_Box_Type': input_gear_26,
             'Manufacturer': input_manufacturer_26,
-            'model': input_model_26, # Adăugat model
+            'model': input_model_26, 
             'tax': median_tax, 
             'mpg': median_mpg, 
             'Fuel_Type': input_fuel_26
@@ -384,6 +388,63 @@ with tab4:
         
         st.success(f"**Prețul estimat pentru {input_manufacturer_26} {input_model_26} din {input_year_26} este:**")
         st.info(f"## ${predicted_price_26:,.0f}")
-        # ******************* SCHIMBAREA AICI: ELIMINAT TEXTUL DESPRE MODEL *******************
+        
         st.markdown(f"*Această estimare se bazează pe tendințele pieței pentru **{input_manufacturer_26}** și caracteristicile introduse.*")
-        # *************************************************************************************
+
+        # ******************* MODIFICARE PENTRU GRAFIC *******************
+        
+        # 1. Calculează datele istorice (similar Tab 2)
+        df_model_history = df_temp_26.groupby('Year')['Price'].median().reset_index()
+
+        if not df_model_history.empty:
+            
+            # 2. Adaugă punctul prezis
+            new_point = pd.DataFrame([{
+                'Year': input_year_26, 
+                'Price': predicted_price_26,
+                'Type': 'Predicție 2026'
+            }])
+            
+            # 3. Pregătește datele istorice pentru grafic
+            df_model_history['Type'] = 'Istoric Median'
+            
+            # 4. Combină datele
+            df_combined = pd.concat([df_model_history, new_point], ignore_index=True)
+
+            import plotly.graph_objects as go
+
+            # 5. Creează figura (Linia pentru Istoric)
+            fig_pred = go.Figure()
+            
+            # Adaugă linia istorică
+            fig_pred.add_trace(go.Scatter(
+                x=df_combined[df_combined['Type'] == 'Istoric Median']['Year'],
+                y=df_combined[df_combined['Type'] == 'Istoric Median']['Price'],
+                mode='lines+markers',
+                name='Preț Median Istoric',
+                line=dict(color='blue'),
+                marker=dict(size=8, color='blue')
+            ))
+
+            # Adaugă punctul prezis (marker mare, roșu)
+            fig_pred.add_trace(go.Scatter(
+                x=new_point['Year'],
+                y=new_point['Price'],
+                mode='markers',
+                name=f'Predicție {input_year_26}',
+                marker=dict(size=15, color='red', symbol='star'),
+                hovertext=f"Preț estimat: ${predicted_price_26:,.0f}"
+            ))
+            
+            # Setează titlul și etichetele
+            fig_pred.update_layout(
+                title=f'Evoluția Prețului Median cu Extrapolarea {input_year_26} pentru {input_manufacturer_26} {input_model_26}',
+                xaxis_title='Anul de Producție',
+                yaxis_title='Preț Median ($)',
+                hovermode="x unified"
+            )
+            
+            st.plotly_chart(fig_pred, use_container_width=True)
+
+        else:
+            st.warning("Nu există date istorice suficiente pentru acest model pentru a afișa graficul de evoluție.")

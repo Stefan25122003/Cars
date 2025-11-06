@@ -11,8 +11,7 @@ import numpy as np
 # --- 1. CONFIGURARE APLICATIE ---
 st.set_page_config(layout="wide", page_title="Analiza Autoturisme Simplificata")
 
-st.title("🚗 Analiza Factorilor de Pret Auto (Set Simplificat)")
-st.markdown("Aplicatie interactiva pentru explorarea datelor auto si predictia pretului pe baza coloanelor disponibile (model, year, price, transmission, mileage, fuelType, tax, mpg, engineSize, Manufacturer).")
+st.title("🚗 Analiza Factorilor de Pret Auto ")
 
 # --- 1. INCARCAREA SI PREGATIREA DATELOR ---
 @st.cache_data 
@@ -249,7 +248,7 @@ with tab3:
                 by='Raport_Pret_Calitate_Mediu', ascending=False
             )
             
-            st.info(f"**Top 3 Modele** cu cel mai bun raport C/P (Pret mediu intre ${buget_min:,.0f} si ${buget_max:,.0f}):")
+            st.info(f"**Top 3 Modele** cu cel mai bun raport C/P (Pret mediu intre ${buget_min:,.0f}    si    ${buget_max:,.0f}):")
             if not ranking_buget.empty:
                 rec_model_cols = ['Manufacturer', 'model', 'Raport_Pret_Calitate_Mediu', 'Pret_Mediu']
                 st.dataframe(ranking_buget[rec_model_cols].head(3).style.format(
@@ -436,7 +435,7 @@ with tab5:
     input_year = colE.slider(
         "Anul de Productie:", 
         int(df['Year'].min()), 
-        max_year_data + 3, 
+        max_year_data +1, 
         max_year_data 
     )
     input_mileage = colF.number_input("Kilometraj (km):", min_value=0, max_value=int(df['Mileage_Num'].max()) if not df['Mileage_Num'].empty else 300000, value=10000)
